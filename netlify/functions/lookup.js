@@ -6,38 +6,38 @@ exports.handler = async (event) => {
     'Content-Type': 'application/json'
   }
 
-  const address = event.queryStringParameters?.address
+  const address = event.queryStringParameters && event.queryStringParameters.address
   if (!address) {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing address' }) }
+    return { statusCode: 400, headers: headers, body: JSON.stringify({ error: 'Missing address' }) }
   }
 
   const token = process.env.REGRID_TOKEN
   const encoded = encodeURIComponent(address.trim())
-  const url = `https://app.regrid.com/api/v1/parcels/address?query=${encoded}&path=/us/ca/san-diego&token=${token}&limit=1`
+  const url = 'https://app.regrid.com/api/v1/parcels/address?query=' + encoded + '&path=/us/ca/san-diego&token=' + token + '&limit=1'
 
-  let data
+  var data
   try {
-    const res = await fetch(url)
+    var res = await fetch(url)
     data = await res.json()
   } catch (err) {
-    return { statusCode: 502, headers, body: JSON.stringify({ error: err.message }) }
+    return { statusCode: 502, headers: headers, body: JSON.stringify({ error: err.message }) }
   }
 
-  const parcel = data?.parcels?.features?.[0]?.properties?.fields
+  var features = data && data.parcels && data.parcels.features
+  var parcel = features && features[0] && features[0].properties && features[0].properties.fields
+
   if (!parcel) {
-    return { statusCode: 404, headers, body: JSON.stringify({ error: 'Parcel not found', raw: JSON.stringify(data).slice(0, 300) }) }
+    return { statusCode: 404, headers: headers, body: JSON.stringify({ error: 'Parcel not found', raw: JSON.stringify(data).slice(0, 300) }) }
   }
 
-  const land = parcel.landval || null
-  const improvements = parcel.improvval || null
-  const total = parcel.parval || null
-  const landPct = total && land ? Math.round((land / total) * 100) : null
+  var land = parcel.landval || null
+  var improvements = parcel.improvval || null
+  var total = parcel.parval || null
+  var landPct = (total && land) ? Math.round((land / total) * 100) : null
 
   return {
     statusCode: 200,
-    headers,
-    body: JSON.stringify({ land, improvements, total, land_pct: landPct })
-  }
-}
+    headers: headers,
+    body: JSON.stringify({ land: land, improvements: improvements, total: total, land_pct: landPct })
   }
 }
