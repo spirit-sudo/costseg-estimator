@@ -19,8 +19,9 @@ exports.handler = async (event) => {
   try {
     const res = await fetch(url)
     data = await res.json()
-  } catch (err) {
-    return { statusCode: 502, headers, body: JSON.stringify({ error: 'Regrid unreachable' }) }
+  } } catch (err) {
+    return { statusCode: 502, headers, body: JSON.stringify({ error: err.message }) }
+  
   }
 
   const parcel = data?.parcels?.features?.[0]?.properties?.fields
