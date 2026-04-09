@@ -19,14 +19,13 @@ exports.handler = async (event) => {
   try {
     const res = await fetch(url)
     data = await res.json()
-  } } catch (err) {
+  } catch (err) {
     return { statusCode: 502, headers, body: JSON.stringify({ error: err.message }) }
-  
   }
 
   const parcel = data?.parcels?.features?.[0]?.properties?.fields
   if (!parcel) {
-    return { statusCode: 404, headers, body: JSON.stringify({ error: 'Parcel not found' }) }
+    return { statusCode: 404, headers, body: JSON.stringify({ error: 'Parcel not found', raw: JSON.stringify(data).slice(0, 300) }) }
   }
 
   const land = parcel.landval || null
@@ -38,5 +37,7 @@ exports.handler = async (event) => {
     statusCode: 200,
     headers,
     body: JSON.stringify({ land, improvements, total, land_pct: landPct })
+  }
+}
   }
 }
