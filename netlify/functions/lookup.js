@@ -13,8 +13,7 @@ exports.handler = async (event) => {
 
   const token = process.env.REGRID_TOKEN
   const encoded = encodeURIComponent(address.trim())
-  const url = 'https://app.regrid.com/api/v1/parcels/address?query=' + encoded + '&path=/us/ca/san-diego&token=' + token + '&limit=1'
-
+  const url = 'https://app.regrid.com/api/v2/parcels/address?query=' + encoded + '&path=/us/ca/san-diego&token=' + token + '&limit=1'
   var data
   try {
     var res = await fetch(url)
