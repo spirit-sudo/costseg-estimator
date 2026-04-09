@@ -11,37 +11,27 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing address' }) }
   }
 
+  const token = process.env.REGRID_TOKEN
   const encoded = encodeURIComponent(address.trim())
-  const url = `https://www.sdarcc.gov/bin/cosd/parcel-request?address=${encoded}`
+  const url = `https://app.regrid.com/api/v1/parcels/address?query=${encoded}&path=/us/ca/san-diego&token=${token}&limit=1`
 
-  let html
+  let data
   try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-        'Referer': 'https://www.sdarcc.gov/content/arcc/home/divisions/assessor/secured-assessment-roll-search.html'
-      }
-    })
-    html = await res.text()
+    const res = await fetch(url)
+    data = await res.json()
   } catch (err) {
-    return { statusCode: 502, headers, body: JSON.stringify({ error: 'County portal unreachable' }) }
+    return { statusCode: 502, headers, body: JSON.stringify({ error: 'Regrid unreachable' }) }
   }
 
-  const parse = (label) => {
-    const regex = new RegExp(`${label}[^$]*\\$([\\d,]+)`)
-    const match = html.match(regex)
-    return match ? parseInt(match[1].replace(/,/g, ''), 10) : null
+  const parcel = data?.parcels?.features?.[0]?.properties?.fields
+  if (!parcel) {
+    return { statusCode: 404, headers, body: JSON.stringify({ error: 'Parcel not found' }) }
   }
 
-  const land = parse('Land:')
-  const improvements = parse('Improvements:')
-  const total = parse('Total Assessed Value:')
-
-  if (!land && !improvements) {
-    return { statusCode: 404, headers, body: JSON.stringify({ error: 'Parcel not found', raw: html.slice(0, 500) }) }
-  }
-
-  const landPct = total ? Math.round((land / total) * 100) : null
+  const land = parcel.landval || null
+  const improvements = parcel.improvval || null
+  const total = parcel.parval || null
+  const landPct = total && land ? Math.round((land / total) * 100) : null
 
   return {
     statusCode: 200,
