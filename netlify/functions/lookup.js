@@ -11,12 +11,17 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing address' }) }
   }
 
-  const encoded = encodeURIComponent(address.toUpperCase().trim())
-  const url = `https://www.sdarcc.gov/content/arcc/home/divisions/assessor/secured-assessment-roll-search/parcel-request?address=${encoded}`
+  const encoded = encodeURIComponent(address.trim())
+  const url = `https://www.sdarcc.gov/bin/cosd/parcel-request?address=${encoded}`
 
   let html
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+        'Referer': 'https://www.sdarcc.gov/content/arcc/home/divisions/assessor/secured-assessment-roll-search.html'
+      }
+    })
     html = await res.text()
   } catch (err) {
     return { statusCode: 502, headers, body: JSON.stringify({ error: 'County portal unreachable' }) }
@@ -33,7 +38,7 @@ exports.handler = async (event) => {
   const total = parse('Total Assessed Value:')
 
   if (!land && !improvements) {
-    return { statusCode: 404, headers, body: JSON.stringify({ error: 'Parcel not found' }) }
+    return { statusCode: 404, headers, body: JSON.stringify({ error: 'Parcel not found', raw: html.slice(0, 500) }) }
   }
 
   const landPct = total ? Math.round((land / total) * 100) : null
